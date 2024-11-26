@@ -1,7 +1,8 @@
 import pygame
-from grid import init_grid, GRID_SIZE, grid
+from grid import init_grid
 from agent import move_agent
 from ai import bfs
+from config import GRID_SIZE
 from ui import init_ui, draw_grid, update_ui
 
 def main():

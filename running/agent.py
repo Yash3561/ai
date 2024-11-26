@@ -1,8 +1,8 @@
-from grid import GRID_SIZE, grid
-from ai import get_neighbors  # Import get_neighbors from ai.py
+from config import GRID_SIZE  # Import GRID_SIZE only
+from grid import grid
+from ai import get_neighbors  # Avoid importing other game logic here
 
-# Agent's position (initially at (0, 0))
-agent_position = (0, 0)
+
 
 # Function to move the agent
 def move_agent(agent_x, agent_y, direction):

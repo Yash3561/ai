@@ -135,8 +135,6 @@ def compare_algorithms(start, goal):
     
     print(f"Best Algorithm: {best_algo} (Shortest Path)")
 
-
-# Function to handle manual input for movement
 def handle_manual_input():
     global agent_position
     path = [agent_position]  # Start the path with the agent's initial position
@@ -148,9 +146,10 @@ def handle_manual_input():
         # Check if agent reaches glitter
         if agent_position == glitter_position:
             print("You found the glitter! Congratulations!")
+            grab_gold_manually(path)  # After finding gold, return to the origin
             running = False
         elif agent_position == wumpus_position:
-            print("Wumpus Killed You! Try Again!")
+            print("Wumpus killed you! Try again!")
             running = False
 
         for event in pygame.event.get():
@@ -168,6 +167,49 @@ def handle_manual_input():
                 
                 path.append(agent_position)  # Add new position to the path
                 time.sleep(0.1)  # Small delay for smooth movement
+
+def grab_gold_manually(path_to_gold):
+    print("Gold Grabbed! Now returning to the start...")
+
+    # After grabbing gold, use BFS (or any other algorithm) to return to the origin (0, 0)
+    start = path_to_gold[-1]  # Current position after grabbing the gold
+    goal = (0, 0)  # Starting position
+    optimal_path = bfs(start, goal)  # Using BFS for simplicity
+
+    if not optimal_path:
+        print("No path found back to the start!")
+        return
+
+    ai_path = []
+    for move in optimal_path:
+        agent_position = move
+        ai_path.append(agent_position)  # Add move to the AI's path
+        draw_grid(screen, agent_position, font, ai_path)  # Visualize path to start
+        pygame.display.flip()
+        time.sleep(0.5)
+
+        if agent_position == (0, 0):
+            print("Agent has returned to the start!")
+            check_optimality(path_to_gold, optimal_path)
+            break
+
+def check_optimality(user_path, optimal_path):
+    # Compare lengths of the user path and the optimal path
+    user_path_length = len(user_path)
+    optimal_path_length = len(optimal_path)
+
+    # Feedback based on comparison
+    if user_path_length < optimal_path_length:
+        print("Your path was optimal! Great job!")
+    else:
+        print(f"Your path was not optimal. The optimal path was {optimal_path_length} steps.")
+        print(f"Suggestions: Try to avoid unnecessary detours. Consider using a more direct route.")
+        print(f"Here's the optimal path: {optimal_path}")
+
+    # Optionally, display the paths for comparison
+    print(f"Your path: {user_path}")
+    print(f"Optimal path: {optimal_path}")
+
 
 # Main function to choose between manual and AI mode
 def main():
