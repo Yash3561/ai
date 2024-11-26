@@ -24,7 +24,7 @@ def execute_algorithm(algorithm, start, goal, algorithm_name):
     
     if not path:
         print(f"No path found using {algorithm_name}!")
-        return
+        return None
 
     ai_path = []
     for move in path:
@@ -32,16 +32,34 @@ def execute_algorithm(algorithm, start, goal, algorithm_name):
         ai_path.append(agent_position)  # Add move to the AI's path
         draw_grid(screen, agent_position, font, ai_path)  # Pass the path to the grid drawing
         pygame.display.flip()
-        time.sleep(0.5)  # Pause to visualize AI movement
+        time.sleep(0.5)
 
-        # Check if agent reaches glitter
         if agent_position == glitter_position:
-            print(f"{algorithm_name} found the glitter!")
-            return len(path)  # Return the path length
-        elif agent_position == wumpus_position:
-            print(f"{algorithm_name}: Wumpus killed you! Try again!")
-            return None
-    return len(path)
+            print(f"{algorithm_name} found the glitter and grabbed the gold!")
+            grab_gold(ai_path)  # Call the function to grab gold and return to (0, 0)
+            return len(path)  # Return the length of the path instead of the path
+
+    return len(path)  # Return path length
+
+
+def grab_gold(path_to_gold):
+    global agent_position
+    print("Gold Grabbed! Now returning to the start...")
+
+    # Reverse the path to return to (0, 0)
+    path_to_start = path_to_gold[::-1]  # Reverse the path
+
+    # Move agent back to start following the reversed path
+    for move in path_to_start:
+        agent_position = move
+        draw_grid(screen, agent_position, font, path_to_start)  # Visualize path to start
+        pygame.display.flip()
+        time.sleep(0.5)
+
+        # Check if agent reaches the start position again
+        if agent_position == (0, 0):
+            print("Agent has returned to the start!")
+            break
 
 # AI mode with algorithm selection
 def ai_mode():
@@ -85,7 +103,7 @@ def ai_mode():
                     compare_algorithms(start, goal)
                 elif event.key == pygame.K_ESCAPE:  # Back to main menu
                     running = False
-
+                    
 def compare_algorithms(start, goal):
     results = {}
 
@@ -96,14 +114,17 @@ def compare_algorithms(start, goal):
     results["A*"] = execute_algorithm(a_star, start, goal, "A*")
     results["Dijkstra"] = execute_algorithm(dijkstra, start, goal, "Dijkstra")
 
-    # Check if any algorithm found a path
+    # Remove None results (no path found)
     valid_results = {algo: length for algo, length in results.items() if length is not None}
+    
     if not valid_results:
         print("No valid path found by any algorithm.")
         return
 
-    # Find the best algorithm
+    # Find the best algorithm by comparing the lengths of the paths
     best_algo = min(valid_results, key=valid_results.get)
+    
+    # Print comparison results
     print("Comparison Complete!")
     print("Results:")
     for algo, length in results.items():
@@ -111,6 +132,7 @@ def compare_algorithms(start, goal):
             print(f"{algo}: Path Length = {length}")
         else:
             print(f"{algo}: No Path Found")
+    
     print(f"Best Algorithm: {best_algo} (Shortest Path)")
 
 
