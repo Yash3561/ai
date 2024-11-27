@@ -1,6 +1,6 @@
 import pygame
 import time
-from config import wumpus_position, glitter_position, agent_position
+from config import wumpus_position, glitter_position, agent_position, pit_position
 from agent import move_agent
 from ai import bfs, dfs, dijkstra, a_star
 from grid import draw_grid
@@ -137,62 +137,65 @@ def compare_algorithms(start, goal):
 
 def handle_manual_input():
     global agent_position
+    agent_position = (0, 0)  # Reset the agent's position to the start (0, 0)
     path = [agent_position]  # Start the path with the agent's initial position
     running = True
+
     while running:
-        draw_grid(screen, agent_position, font, path)  # Pass the path to the grid drawing
+        draw_grid(screen, agent_position, font, path)  # Draw the grid with the path and agent's current position
         pygame.display.flip()
 
         # Check if agent reaches glitter
         if agent_position == glitter_position:
             print("You found the glitter! Congratulations!")
-            grab_gold_manually(path)  # After finding gold, return to the origin
-            running = False
-        elif agent_position == wumpus_position:
-            print("Wumpus killed you! Try again!")
+            grab_gold_manually(path)  # Use the recorded path for backtracking
             running = False
 
+        # Check if agent falls into a pit or encounters Wumpus
+        elif agent_position == pit_position:  # Assuming single pit position
+            print("You fell into a pit! Game over!")
+            running = False
+        elif agent_position == wumpus_position:  # Assuming single Wumpus position
+            print("The Wumpus killed you! Game over!")
+            running = False
+
+        # Handle key events for movement
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_UP:
-                    agent_position = move_agent(agent_position[0], agent_position[1], "up")
-                if event.key == pygame.K_DOWN:
-                    agent_position = move_agent(agent_position[0], agent_position[1], "down")
-                if event.key == pygame.K_LEFT:
-                    agent_position = move_agent(agent_position[0], agent_position[1], "left")
-                if event.key == pygame.K_RIGHT:
-                    agent_position = move_agent(agent_position[0], agent_position[1], "right")
-                
-                path.append(agent_position)  # Add new position to the path
-                time.sleep(0.1)  # Small delay for smooth movement
+                    new_position = move_agent(agent_position[0], agent_position[1], "up")
+                elif event.key == pygame.K_DOWN:
+                    new_position = move_agent(agent_position[0], agent_position[1], "down")
+                elif event.key == pygame.K_LEFT:
+                    new_position = move_agent(agent_position[0], agent_position[1], "left")
+                elif event.key == pygame.K_RIGHT:
+                    new_position = move_agent(agent_position[0], agent_position[1], "right")
+                else:
+                    continue
+
+                # Add to path only if it's a valid move
+                if new_position != agent_position:
+                    agent_position = new_position
+                    path.append(agent_position)  # Add the new position to the path
+                time.sleep(0.1)  # Small delay for smoother movement
 
 def grab_gold_manually(path_to_gold):
-    print("Gold Grabbed! Now returning to the start...")
+    print("Gold Grabbed! Returning to the start...")
 
-    # After grabbing gold, use BFS (or any other algorithm) to return to the origin (0, 0)
-    start = path_to_gold[-1]  # Current position after grabbing the gold
-    goal = (0, 0)  # Starting position
-    optimal_path = bfs(start, goal)  # Using BFS for simplicity
+    # Reverse the path to return to (0, 0)
+    path_to_start = path_to_gold[::-1]  # Reverse the path
 
-    if not optimal_path:
-        print("No path found back to the start!")
-        return
-
-    ai_path = []
-    for move in optimal_path:
+    for move in path_to_start:
+        global agent_position
         agent_position = move
-        ai_path.append(agent_position)  # Add move to the AI's path
-        draw_grid(screen, agent_position, font, ai_path)  # Visualize path to start
+        draw_grid(screen, agent_position, font, path_to_start)  # Pass only the path to draw_grid
         pygame.display.flip()
         time.sleep(0.5)
 
-        if agent_position == (0, 0):
-            print("Agent has returned to the start!")
-            check_optimality(path_to_gold, optimal_path)
-            break
-
+    print("Agent has successfully returned to the start!")
+    
 def check_optimality(user_path, optimal_path):
     # Compare lengths of the user path and the optimal path
     user_path_length = len(user_path)
