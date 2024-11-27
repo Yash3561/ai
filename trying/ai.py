@@ -67,7 +67,7 @@ def bfs(start, goal):
                 ):
                     queue.append(path + [neighbor])
 
-        print(f"Current Path: {path}, Current Node: {current}")
+        print(f"BFS Visiting: {path}, Current Node: {current}")
     return None  # No path found
 
 def dijkstra(start, goal):
