@@ -1,6 +1,6 @@
 import pygame
 import time
-from config import wumpus_position, glitter_position, agent_position, pit_position
+from config import GRID_SIZE, wumpus_position, glitter_position, agent_position, pit_position
 from agent import move_agent
 from ai import bfs, dfs, dijkstra, a_star
 from grid import draw_grid
@@ -139,25 +139,52 @@ def handle_manual_input():
     global agent_position
     agent_position = (0, 0)  # Reset the agent's position to the start (0, 0)
     path = [agent_position]  # Start the path with the agent's initial position
+    visited_feedback = set()  # Track positions for which feedback is already shown
     running = True
 
     while running:
-        draw_grid(screen, agent_position, font, path)  # Draw the grid with the path and agent's current position
+        # Draw the grid with the path and agent's current position
+        draw_grid(screen, agent_position, font, path)  
         pygame.display.flip()
+
+        # Agent's current position
+        agent_x, agent_y = agent_position
+
+        # Check adjacent cells for Breeze (pit) and Stench (Wumpus)
+        breeze = []
+        stench = []
+        for dx, dy in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
+            nx, ny = agent_x + dx, agent_y + dy
+            if 0 <= nx < GRID_SIZE and 0 <= ny < GRID_SIZE:
+                if (nx, ny) in pit_position:  # Check if pit is near
+                    breeze.append((nx, ny))
+                if (nx, ny) in wumpus_position:  # Check if Wumpus is near
+                    stench.append((nx, ny))
+
+        # Provide feedback only if it's a new position
+        if (agent_position not in visited_feedback):
+            if breeze:
+                print("Feeling Breeze!")
+            if stench:
+                print("Smelling Stench!")
+            visited_feedback.add(agent_position)  # Mark the position as visited for feedback
 
         # Check if agent reaches glitter
         if agent_position == glitter_position:
             print("You found the glitter! Congratulations!")
             grab_gold_manually(path)  # Use the recorded path for backtracking
             running = False
+            continue
 
         # Check if agent falls into a pit or encounters Wumpus
-        elif agent_position == pit_position:  # Assuming single pit position
+        if agent_position in pit_position:
             print("You fell into a pit! Game over!")
             running = False
-        elif agent_position == wumpus_position:  # Assuming single Wumpus position
+            continue
+        elif agent_position in wumpus_position:
             print("The Wumpus killed you! Game over!")
             running = False
+            continue
 
         # Handle key events for movement
         for event in pygame.event.get():
@@ -180,6 +207,7 @@ def handle_manual_input():
                     agent_position = new_position
                     path.append(agent_position)  # Add the new position to the path
                 time.sleep(0.1)  # Small delay for smoother movement
+
 
 def grab_gold_manually(path_to_gold):
     print("Gold Grabbed! Returning to the start...")

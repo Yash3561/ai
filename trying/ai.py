@@ -1,7 +1,7 @@
 from grid import GRID_SIZE, grid
 import heapq  # Required for A* Priority Queue
 from collections import deque
-from config import GRID_SIZE, wumpus_position  # Import shared constants
+from config import GRID_SIZE, wumpus_position, pit_position  # Import shared constants
 
 
 # ai.py
@@ -29,12 +29,14 @@ def dfs(start, goal):
                 if (
                     0 <= neighbor[0] < GRID_SIZE and
                     0 <= neighbor[1] < GRID_SIZE and
-                    neighbor != wumpus_position  # Avoid Wumpus
+                    neighbor not in wumpus_position and  # Avoid Wumpus
+                    neighbor not in pit_position  # Avoid pits
                 ):
                     if neighbor not in path:
                         stack.append(path + [neighbor])
 
     return None  # No path found
+
 
 
 
@@ -57,8 +59,14 @@ def bfs(start, goal):
             x, y = current
             neighbors = [(x - 1, y), (x + 1, y), (x, y - 1), (x, y + 1)]
             for neighbor in neighbors:
-                if 0 <= neighbor[0] < GRID_SIZE and 0 <= neighbor[1] < GRID_SIZE:
+                if (
+                    0 <= neighbor[0] < GRID_SIZE and
+                    0 <= neighbor[1] < GRID_SIZE and
+                    neighbor not in wumpus_position and  # Avoid Wumpus
+                    neighbor not in pit_position  # Avoid pits
+                ):
                     queue.append(path + [neighbor])
+
         print(f"Current Path: {path}, Current Node: {current}")
     return None  # No path found
 
@@ -87,10 +95,10 @@ def dijkstra(start, goal):
             if (
                 0 <= neighbor[0] < GRID_SIZE and
                 0 <= neighbor[1] < GRID_SIZE and
-                neighbor != wumpus_position  # Avoid Wumpus
+                neighbor not in wumpus_position and  # Avoid Wumpus
+                neighbor not in pit_position  # Avoid pits
             ):
-                new_cost = cost + 1  # Uniform cost for all moves
-                # If the neighbor has not been visited or the new cost is lower
+                new_cost = cost + 1
                 if neighbor not in visited or new_cost < visited[neighbor]:
                     visited[neighbor] = new_cost
                     heapq.heappush(priority_queue, (new_cost, path + [neighbor]))
@@ -116,7 +124,12 @@ def a_star(start, goal):
             # Possible moves: up, down, left, right
             neighbors = [(x - 1, y), (x + 1, y), (x, y - 1), (x, y + 1)]
             for neighbor in neighbors:
-                if 0 <= neighbor[0] < GRID_SIZE and 0 <= neighbor[1] < GRID_SIZE:  # Within bounds
+                if (
+                    0 <= neighbor[0] < GRID_SIZE and
+                    0 <= neighbor[1] < GRID_SIZE and
+                    neighbor not in wumpus_position and  # Avoid Wumpus
+                    neighbor not in pit_position  # Avoid pits
+                ):
                     new_cost = cost + 1
                     heapq.heappush(priority_queue, (new_cost + heuristic(neighbor, goal), path + [neighbor]))
         print(f"Current Path: {path}, Current Node: {current}")
