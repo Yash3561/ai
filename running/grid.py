@@ -1,13 +1,18 @@
 import pygame
-from config import GRID_SIZE
+from config import GRID_SIZE, wumpus_position, pit_position, glitter_position
 
 # Grid layout with initial objects (empty, Wumpus, Gold, Pit)
 grid = [["" for _ in range(GRID_SIZE)] for _ in range(GRID_SIZE)]
 
-# For testing purposes, let's add some objects
-grid[2][2] = "W"  # Wumpus
-grid[3][2] = "G"  # Glitter (Gold) at (0, 4)
-grid[4][0] = "P"  # Pit
+# Populate the grid with objects based on dynamic positions from config.py
+for (x, y) in wumpus_position:
+    grid[x][y] = "W"  # Wumpus
+
+for (x, y) in pit_position:
+    grid[x][y] = "P"  # Pit
+
+# Set glitter position in the grid
+grid[glitter_position[0]][glitter_position[1]] = "G"  # Glitter (Gold)
 
 # Draw the grid
 def draw_grid(screen, agent_position, font, path=[]):

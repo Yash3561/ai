@@ -14,7 +14,7 @@ def dfs(start, goal):
         path = stack.pop()
         current = path[-1]
 
-        print(f"DFS Visiting: {current}, Path: {path}")
+        print(f"\n-DFS Visiting: {current}, Path: {path}")
 
         if current == goal:
             return path
@@ -67,7 +67,7 @@ def bfs(start, goal):
                 ):
                     queue.append(path + [neighbor])
 
-        print(f"BFS Visiting: {path}, Current Node: {current}")
+        print(f"\n-BFS Visiting: {path}, Current Node: {current}")
     return None  # No path found
 
 def dijkstra(start, goal):
@@ -82,7 +82,7 @@ def dijkstra(start, goal):
         current = path[-1]
 
         # Debug output
-        print(f"Dijkstra Visiting: {current}, Cost: {cost}, Path: {path}")
+        print(f"\n-Dijkstra Visiting: {current}, Cost: {cost}, Path: {path}")
 
         # If the goal is reached, return the path
         if current == goal:
@@ -132,7 +132,7 @@ def a_star(start, goal):
                 ):
                     new_cost = cost + 1
                     heapq.heappush(priority_queue, (new_cost + heuristic(neighbor, goal), path + [neighbor]))
-        print(f"Current Path: {path}, Current Node: {current}")
+        print(f"\n-A* Visiting: {path}, Current Node: {current}")
 
 
     return []  # No path found

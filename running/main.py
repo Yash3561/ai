@@ -1,6 +1,6 @@
 import pygame
 import time
-from config import wumpus_position, glitter_position, agent_position
+from config import GRID_SIZE, wumpus_position, glitter_position, agent_position, pit_position
 from agent import move_agent
 from ai import bfs, dfs, dijkstra, a_star
 from grid import draw_grid
@@ -23,7 +23,7 @@ def execute_algorithm(algorithm, start, goal, algorithm_name):
     path = algorithm(start, goal)
     
     if not path:
-        print(f"No path found using {algorithm_name}!")
+        print(f"\n - No path found using {algorithm_name}!")
         return None
 
     ai_path = []
@@ -35,7 +35,7 @@ def execute_algorithm(algorithm, start, goal, algorithm_name):
         time.sleep(0.5)
 
         if agent_position == glitter_position:
-            print(f"{algorithm_name} found the glitter and grabbed the gold!")
+            print(f"\n  - {algorithm_name} found the glitter and grabbed the gold!")
             grab_gold(ai_path)  # Call the function to grab gold and return to (0, 0)
             return len(path)  # Return the length of the path instead of the path
 
@@ -44,7 +44,7 @@ def execute_algorithm(algorithm, start, goal, algorithm_name):
 
 def grab_gold(path_to_gold):
     global agent_position
-    print("Gold Grabbed! Now returning to the start...")
+    print("\n - Gold Grabbed! Now returning to the start...")
 
     # Reverse the path to return to (0, 0)
     path_to_start = path_to_gold[::-1]  # Reverse the path
@@ -58,7 +58,7 @@ def grab_gold(path_to_gold):
 
         # Check if agent reaches the start position again
         if agent_position == (0, 0):
-            print("Agent has returned to the start!")
+            print("\n - Agent has returned to the start!")
             break
 
 # AI mode with algorithm selection
@@ -109,90 +109,144 @@ def compare_algorithms(start, goal):
 
     # Execute each algorithm and record results
     print("Comparing algorithms...")
+    start_time_dfs = time.time()
     results["DFS"] = execute_algorithm(dfs, start, goal, "DFS")
+    end_time_dfs = time.time()
+    
+    start_time_bfs = time.time()
     results["BFS"] = execute_algorithm(bfs, start, goal, "BFS")
+    end_time_bfs = time.time()
+    
+    start_time_astar = time.time()
     results["A*"] = execute_algorithm(a_star, start, goal, "A*")
+    end_time_astar = time.time()
+    
+    start_time_dij = time.time()
     results["Dijkstra"] = execute_algorithm(dijkstra, start, goal, "Dijkstra")
+    end_time_dij = time.time()
 
     # Remove None results (no path found)
     valid_results = {algo: length for algo, length in results.items() if length is not None}
     
     if not valid_results:
-        print("No valid path found by any algorithm.")
+        print("\n - No valid path found by any algorithm.")
         return
 
-    # Find the best algorithm by comparing the lengths of the paths
-    best_algo = min(valid_results, key=valid_results.get)
+    # # Find the best algorithm by comparing the lengths of the paths
+    # best_algo = min(valid_results, key=valid_results.get)
     
     # Print comparison results
-    print("Comparison Complete!")
-    print("Results:")
+    print("\n\nExecution Complete!")
+    print("\n\nResults:")
+    print("\nEXECUTION TIME: ")
+    print(f"\n    - DFS Execution Time: {end_time_dfs - start_time_dfs:.4f} seconds")
+    print(f"\n    - BFS Execution Time: {end_time_bfs - start_time_bfs:.4f} seconds")
+    print(f"\n    - A* Execution Time: {end_time_astar - start_time_astar:.4f} seconds")
+    print(f"\n    - Dijkstra Execution Time: {end_time_dij - start_time_dij:.4f} seconds")
+    
+    print("\nSEARCH COST: ")
     for algo, length in results.items():
         if length is not None:
-            print(f"{algo}: Path Length = {length}")
+            print(f"\n  -{algo}: Path Length = {length}")
         else:
-            print(f"{algo}: No Path Found")
+            print(f"\n  -{algo}: No Path Found")
     
-    print(f"Best Algorithm: {best_algo} (Shortest Path)")
+    # print(f"Best Algorithm: {best_algo} (Shortest Path)")
 
 def handle_manual_input():
     global agent_position
+    agent_position = (0, 0)  # Reset the agent's position to the start (0, 0)
     path = [agent_position]  # Start the path with the agent's initial position
+    visited_feedback = set()  # Track positions for which feedback is already shown
     running = True
+    print("\n\n USING A*, to show you best optimal solution in case you didn't find:")
+    optimal_path = a_star((0, 0), glitter_position)
+    
+    print("\n\n YOUR PATH:")
     while running:
-        draw_grid(screen, agent_position, font, path)  # Pass the path to the grid drawing
+        # Draw the grid with the path and agent's current position
+        draw_grid(screen, agent_position, font, path)  
         pygame.display.flip()
+
+        # Agent's current position
+        agent_x, agent_y = agent_position
+
+        # Check adjacent cells for Breeze (pit) and Stench (Wumpus)
+        breeze = []
+        stench = []
+        for dx, dy in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
+            nx, ny = agent_x + dx, agent_y + dy
+            if 0 <= nx < GRID_SIZE and 0 <= ny < GRID_SIZE:
+                if (nx, ny) in pit_position:  # Check if pit is near
+                    breeze.append((nx, ny))
+                if (nx, ny) in wumpus_position:  # Check if Wumpus is near
+                    stench.append((nx, ny))
+
+        # Provide feedback only if it's a new position
+        if (agent_position not in visited_feedback):
+            if breeze:
+                print("\n - Feeling Breeze!")
+            if stench:
+                print("\n - Smelling Stench!")
+            visited_feedback.add(agent_position)  # Mark the position as visited for feedback
 
         # Check if agent reaches glitter
         if agent_position == glitter_position:
-            print("You found the glitter! Congratulations!")
-            grab_gold_manually(path)  # After finding gold, return to the origin
+            print("\n - You found the glitter! Congratulations!")
+            grab_gold_manually(path)  # Use the recorded path for backtracking
+            check_optimality(path, optimal_path)
             running = False
-        elif agent_position == wumpus_position:
-            print("Wumpus killed you! Try again!")
-            running = False
+            continue
 
+        # Check if agent falls into a pit or encounters Wumpus
+        if agent_position in pit_position:
+            print("\n - You fell into a pit! Game over!")
+            running = False
+            continue
+        elif agent_position in wumpus_position:
+            print("\n - The Wumpus killed you! Game over!")
+            running = False
+            continue
+
+        # Handle key events for movement
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_UP:
-                    agent_position = move_agent(agent_position[0], agent_position[1], "up")
-                if event.key == pygame.K_DOWN:
-                    agent_position = move_agent(agent_position[0], agent_position[1], "down")
-                if event.key == pygame.K_LEFT:
-                    agent_position = move_agent(agent_position[0], agent_position[1], "left")
-                if event.key == pygame.K_RIGHT:
-                    agent_position = move_agent(agent_position[0], agent_position[1], "right")
+                    new_position = move_agent(agent_position[0], agent_position[1], "up")
+                elif event.key == pygame.K_DOWN:
+                    new_position = move_agent(agent_position[0], agent_position[1], "down")
+                elif event.key == pygame.K_LEFT:
+                    new_position = move_agent(agent_position[0], agent_position[1], "left")
+                elif event.key == pygame.K_RIGHT:
+                    new_position = move_agent(agent_position[0], agent_position[1], "right")
+                else:
+                    continue
+
+                # Add to path only if it's a valid move
+                if new_position != agent_position:
+                    agent_position = new_position
+                    path.append(agent_position)  # Add the new position to the path
+                time.sleep(0.1)  # Small delay for smoother movement
                 
-                path.append(agent_position)  # Add new position to the path
-                time.sleep(0.1)  # Small delay for smooth movement
+
 
 def grab_gold_manually(path_to_gold):
-    print("Gold Grabbed! Now returning to the start...")
+    print("\n - Gold Grabbed! Returning to the start...")
 
-    # After grabbing gold, use BFS (or any other algorithm) to return to the origin (0, 0)
-    start = path_to_gold[-1]  # Current position after grabbing the gold
-    goal = (0, 0)  # Starting position
-    optimal_path = bfs(start, goal)  # Using BFS for simplicity
+    # Reverse the path to return to (0, 0)
+    path_to_start = path_to_gold[::-1]  # Reverse the path
 
-    if not optimal_path:
-        print("No path found back to the start!")
-        return
-
-    ai_path = []
-    for move in optimal_path:
+    for move in path_to_start:
+        global agent_position
         agent_position = move
-        ai_path.append(agent_position)  # Add move to the AI's path
-        draw_grid(screen, agent_position, font, ai_path)  # Visualize path to start
+        draw_grid(screen, agent_position, font, path_to_start)  # Pass only the path to draw_grid
         pygame.display.flip()
         time.sleep(0.5)
 
-        if agent_position == (0, 0):
-            print("Agent has returned to the start!")
-            check_optimality(path_to_gold, optimal_path)
-            break
-
+    print("\n - Agent has successfully returned to the start!")
+    
 def check_optimality(user_path, optimal_path):
     # Compare lengths of the user path and the optimal path
     user_path_length = len(user_path)
@@ -200,15 +254,15 @@ def check_optimality(user_path, optimal_path):
 
     # Feedback based on comparison
     if user_path_length < optimal_path_length:
-        print("Your path was optimal! Great job!")
+        print("\n - Your path was optimal! Great job!")
     else:
-        print(f"Your path was not optimal. The optimal path was {optimal_path_length} steps.")
-        print(f"Suggestions: Try to avoid unnecessary detours. Consider using a more direct route.")
-        print(f"Here's the optimal path: {optimal_path}")
+        print(f"\n - Your path was not optimal. The optimal path was {optimal_path_length} steps.")
+        print(f"\n - Suggestions: Try to avoid unnecessary detours. Consider using a more direct route.")
+        print(f"\n - Here's the optimal path: {optimal_path}")
 
     # Optionally, display the paths for comparison
-    print(f"Your path: {user_path}")
-    print(f"Optimal path: {optimal_path}")
+    print(f"\n - Your path: {user_path}")
+    print(f"\n - Optimal path: {optimal_path}")
 
 
 # Main function to choose between manual and AI mode
@@ -238,6 +292,7 @@ def main():
                     running = False
 
     pygame.quit()
+    print("THANKYOU FOR USING THIS PROGRAM! HAVE A GOOD DAY! :)")
 
 if __name__ == "__main__":
     main()
