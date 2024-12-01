@@ -152,17 +152,48 @@ def compare_algorithms(start, goal):
             print(f"\n  - {algo}: No Path Found")
     
     # print(f"Best Algorithm: {best_algo} (Shortest Path)")
+    
+    
+def shoot_arrow(agent_position, direction, wumpus_positions, grid_size):
+    """
+    Handles shooting the arrow in the specified direction.
+    Returns True if a Wumpus is hit, False otherwise.
+    """
+    x, y = agent_position
+    if direction == "up":
+        path = [(i, y) for i in range(x - 1, -1, -1)]
+    elif direction == "down":
+        path = [(i, y) for i in range(x + 1, grid_size)]
+    elif direction == "left":
+        path = [(x, i) for i in range(y - 1, -1, -1)]
+    elif direction == "right":
+        path = [(x, i) for i in range(y + 1, grid_size)]
+    else:
+        print("\n - Invalid direction! Arrow wasted.")
+        return False, wumpus_positions
+
+    # Check if a Wumpus is in the path
+    for position in path:
+        if position in wumpus_positions:
+            print(f"\n - You killed a Wumpus at {position} !")
+            grid[position[0]][position[1]] = ""
+            wumpus_positions.remove(position)  # Remove Wumpus
+            return True, wumpus_positions
+
+    print("\n - Arrow missed. No Wumpus in the path.")
+    return False, wumpus_positions
+
 
 def handle_manual_input():
-    global agent_position
+    global agent_position, wumpus_position
     agent_position = (0, 0)  # Reset the agent's position to the start (0, 0)
     path = [agent_position]  # Start the path with the agent's initial position
     visited_feedback = set()  # Track positions for which feedback is already shown
     running = True
-    print("\n\n USING A*, to show you best optimal solution in case you didn't find:")
+    print("\n\nUSING A*, to show you the best optimal solution in case you didn't find:")
     optimal_path = a_star((0, 0), glitter_position)
-    
-    print("\n\n YOUR PATH:")
+
+    print("\n\nYOUR PATH:")
     while running:
         # Draw the grid with the path and agent's current position
         draw_grid(screen, agent_position, font, path)  
@@ -187,7 +218,7 @@ def handle_manual_input():
             if breeze:
                 print("\n - Feeling Breeze!")
             if stench:
-                print("\n - Smelling Stench!")
+                print("\n - Smelling Stench! (Press 'S' to shoot!)")
             visited_feedback.add(agent_position)  # Mark the position as visited for feedback
 
         # Check if agent reaches glitter
@@ -208,7 +239,7 @@ def handle_manual_input():
             running = False
             continue
 
-        # Handle key events for movement
+        # Handle key events for movement or shooting
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
@@ -221,6 +252,14 @@ def handle_manual_input():
                     new_position = move_agent(agent_position[0], agent_position[1], "left")
                 elif event.key == pygame.K_RIGHT:
                     new_position = move_agent(agent_position[0], agent_position[1], "right")
+                elif event.key == pygame.K_s:  # Press 'S' to shoot
+                    direction = input("\n - Enter direction to shoot (up/down/left/right): ").lower()
+                    hit, wumpus_position = shoot_arrow(agent_position, direction, wumpus_position, GRID_SIZE)
+                    # if hit:
+                        
+                    # else:
+                    #     print("You missed. No Wumpus in the path.")
+                    # continue  # Skip normal movement after shooting
                 else:
                     continue
 
@@ -228,7 +267,20 @@ def handle_manual_input():
                 if new_position != agent_position:
                     agent_position = new_position
                     path.append(agent_position)  # Add the new position to the path
+
                 time.sleep(0.1)  # Small delay for smoother movement
+
+        # # Check for win/loss conditions
+        # if not wumpus_position:
+        #     print("You have defeated all the Wumpus! You win!")
+        #     break
+        # if agent_position in pit_position:
+        #     print("You fell into a pit! Game over!")
+        #     break
+        # if agent_position == glitter_position:
+        #     print("You found the glitter! You win!")
+        #     break
+
                 
 
 
