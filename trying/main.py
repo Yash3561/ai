@@ -3,7 +3,7 @@ import time
 from config import GRID_SIZE, wumpus_position, glitter_position, agent_position, pit_position
 from agent import move_agent
 from ai import bfs, dfs, dijkstra, a_star
-from grid import draw_grid
+from grid import draw_grid, grid, generate_fol_sentences
 
 # Initialize Pygame
 pygame.init()
@@ -35,7 +35,7 @@ def execute_algorithm(algorithm, start, goal, algorithm_name):
         time.sleep(0.5)
 
         if agent_position == glitter_position:
-            print(f"\n  - {algorithm_name} found the glitter and grabbed the gold!")
+            print(f"\n - {algorithm_name} found the glitter and grabbed the gold!")
             grab_gold(ai_path)  # Call the function to grab gold and return to (0, 0)
             return len(path)  # Return the length of the path instead of the path
 
@@ -147,9 +147,9 @@ def compare_algorithms(start, goal):
     print("\nSEARCH COST: ")
     for algo, length in results.items():
         if length is not None:
-            print(f"\n  -{algo}: Path Length = {length}")
+            print(f"\n  - {algo}: Path Length = {length}")
         else:
-            print(f"\n  -{algo}: No Path Found")
+            print(f"\n  - {algo}: No Path Found")
     
     # print(f"Best Algorithm: {best_algo} (Shortest Path)")
 
@@ -262,13 +262,19 @@ def check_optimality(user_path, optimal_path):
 
     # Optionally, display the paths for comparison
     print(f"\n - Your path: {user_path}")
-    print(f"\n - Optimal path: {optimal_path}")
 
 
 # Main function to choose between manual and AI mode
 def main():
     global agent_position
     agent_position = (0, 0)  # Reset agent's starting position
+    
+    # Generate and display the corresponding FOL sentences
+    fol_sentences = generate_fol_sentences(grid)
+    for sentence in fol_sentences:
+        print(sentence)
+    
+    print("\n\nGreat! The Game is ready in the window of PyGame, Have FUN !")
 
     # Main loop
     running = True
@@ -292,7 +298,7 @@ def main():
                     running = False
 
     pygame.quit()
-    print("THANKYOU FOR USING THIS PROGRAM! HAVE A GOOD DAY! :)")
+    print("\n\nTHANKYOU FOR USING THIS PROGRAM! HAVE A GOOD DAY! :)")
 
 if __name__ == "__main__":
     main()
